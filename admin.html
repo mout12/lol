@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Redirect Admin</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f6f7f9;
+        --panel: #ffffff;
+        --text: #1f2933;
+        --muted: #64748b;
+        --line: #d8dee8;
+        --accent: #0f766e;
+        --accent-dark: #115e59;
+        --danger: #b42318;
+        --ok: #067647;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      main {
+        width: min(100%, 440px);
+        margin: 0 auto;
+        padding: 28px 18px;
+      }
+
+      h1 {
+        margin: 0 0 6px;
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: 0;
+      }
+
+      .subtitle {
+        margin: 0 0 22px;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 18px;
+        box-shadow: 0 8px 30px rgba(15, 23, 42, 0.06);
+      }
+
+      .field {
+        display: grid;
+        gap: 7px;
+        margin-bottom: 14px;
+      }
+
+      label {
+        font-size: 13px;
+        font-weight: 650;
+      }
+
+      input {
+        width: 100%;
+        min-height: 46px;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        padding: 11px 12px;
+        font: inherit;
+        color: var(--text);
+        background: #ffffff;
+      }
+
+      input:focus {
+        border-color: var(--accent);
+        outline: 3px solid rgba(15, 118, 110, 0.16);
+      }
+
+      button {
+        width: 100%;
+        min-height: 46px;
+        border: 0;
+        border-radius: 7px;
+        padding: 11px 14px;
+        font: inherit;
+        font-weight: 700;
+        color: #ffffff;
+        background: var(--accent);
+        cursor: pointer;
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.65;
+      }
+
+      button.secondary {
+        color: var(--text);
+        background: #e8edf2;
+      }
+
+      button:not(:disabled):hover {
+        background: var(--accent-dark);
+      }
+
+      button.secondary:not(:disabled):hover {
+        background: #dbe3eb;
+      }
+
+      .stack {
+        display: grid;
+        gap: 10px;
+      }
+
+      .status {
+        min-height: 22px;
+        margin-top: 14px;
+        font-size: 14px;
+        line-height: 1.45;
+        color: var(--muted);
+      }
+
+      .status.error {
+        color: var(--danger);
+      }
+
+      .status.ok {
+        color: var(--ok);
+      }
+
+      .session {
+        display: grid;
+        gap: 12px;
+      }
+
+      .session-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        background: #f8fafc;
+      }
+
+      .session-row strong,
+      .session-row span {
+        overflow-wrap: anywhere;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Redirect Admin</h1>
+      <p class="subtitle">Sign in to verify the admin login path.</p>
+
+      <section id="loginPanel" class="panel">
+        <form id="loginForm" class="stack">
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" autocomplete="username" required />
+          </div>
+
+          <div class="field">
+            <label for="password">Password</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autocomplete="current-password"
+              required
+            />
+          </div>
+
+          <button id="loginButton" type="submit">Sign in</button>
+        </form>
+        <p id="loginStatus" class="status" aria-live="polite"></p>
+      </section>
+
+      <section id="newPasswordPanel" class="panel hidden">
+        <form id="newPasswordForm" class="stack">
+          <div class="field">
+            <label for="newPassword">New password</label>
+            <input
+              id="newPassword"
+              name="newPassword"
+              type="password"
+              autocomplete="new-password"
+              minlength="12"
+              required
+            />
+          </div>
+
+          <button id="newPasswordButton" type="submit">Set password</button>
+        </form>
+        <p id="newPasswordStatus" class="status" aria-live="polite"></p>
+      </section>
+
+      <section id="sessionPanel" class="panel session hidden">
+        <div class="session-row">
+          <strong>Signed in</strong>
+          <span id="signedInAs"></span>
+        </div>
+        <button id="logoutButton" class="secondary" type="button">Sign out</button>
+        <p id="sessionStatus" class="status ok" aria-live="polite"></p>
+      </section>
+    </main>
+
+    <script>
+      const cognito = {
+        region: "us-east-2",
+        clientId: "mjj7ggl6ti48cu6s8qutdek1k",
+        endpoint: "https://cognito-idp.us-east-2.amazonaws.com/",
+      };
+
+      const state = {
+        challengeSession: null,
+        challengeUsername: null,
+        displayEmail: null,
+      };
+
+      const elements = {
+        loginPanel: document.querySelector("#loginPanel"),
+        loginForm: document.querySelector("#loginForm"),
+        loginButton: document.querySelector("#loginButton"),
+        loginStatus: document.querySelector("#loginStatus"),
+        newPasswordPanel: document.querySelector("#newPasswordPanel"),
+        newPasswordForm: document.querySelector("#newPasswordForm"),
+        newPasswordButton: document.querySelector("#newPasswordButton"),
+        newPasswordStatus: document.querySelector("#newPasswordStatus"),
+        sessionPanel: document.querySelector("#sessionPanel"),
+        signedInAs: document.querySelector("#signedInAs"),
+        sessionStatus: document.querySelector("#sessionStatus"),
+        logoutButton: document.querySelector("#logoutButton"),
+      };
+
+      function show(panelName) {
+        elements.loginPanel.classList.toggle("hidden", panelName !== "login");
+        elements.newPasswordPanel.classList.toggle("hidden", panelName !== "newPassword");
+        elements.sessionPanel.classList.toggle("hidden", panelName !== "session");
+      }
+
+      function setStatus(element, message, type) {
+        element.textContent = message || "";
+        element.classList.toggle("error", type === "error");
+        element.classList.toggle("ok", type === "ok");
+      }
+
+      async function cognitoRequest(target, payload) {
+        const response = await fetch(cognito.endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-amz-json-1.1",
+            "X-Amz-Target": `AWSCognitoIdentityProviderService.${target}`,
+          },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          const message = data.message || data.__type || "Cognito request failed";
+          throw new Error(message);
+        }
+
+        return data;
+      }
+
+      function saveSession(authResult, email) {
+        const expiresAt = Date.now() + authResult.ExpiresIn * 1000;
+        sessionStorage.setItem("adminEmail", email);
+        sessionStorage.setItem("idToken", authResult.IdToken);
+        sessionStorage.setItem("accessToken", authResult.AccessToken);
+        sessionStorage.setItem("expiresAt", String(expiresAt));
+      }
+
+      function clearSession() {
+        sessionStorage.removeItem("adminEmail");
+        sessionStorage.removeItem("idToken");
+        sessionStorage.removeItem("accessToken");
+        sessionStorage.removeItem("expiresAt");
+      }
+
+      function renderExistingSession() {
+        const email = sessionStorage.getItem("adminEmail");
+        const expiresAt = Number(sessionStorage.getItem("expiresAt") || 0);
+
+        if (!email || !expiresAt || expiresAt <= Date.now()) {
+          clearSession();
+          show("login");
+          return;
+        }
+
+        elements.signedInAs.textContent = email;
+        setStatus(elements.sessionStatus, "Credentials accepted.", "ok");
+        show("session");
+      }
+
+      elements.loginForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        elements.loginButton.disabled = true;
+        setStatus(elements.loginStatus, "Signing in...");
+
+        const form = new FormData(elements.loginForm);
+        const email = String(form.get("email") || "").trim();
+        const password = String(form.get("password") || "");
+
+        try {
+          const result = await cognitoRequest("InitiateAuth", {
+            AuthFlow: "USER_PASSWORD_AUTH",
+            ClientId: cognito.clientId,
+            AuthParameters: {
+              USERNAME: email,
+              PASSWORD: password,
+            },
+          });
+
+          if (result.ChallengeName === "NEW_PASSWORD_REQUIRED") {
+            state.challengeSession = result.Session;
+            state.challengeUsername = result.ChallengeParameters.USER_ID_FOR_SRP || email;
+            state.displayEmail = email;
+            setStatus(elements.loginStatus, "");
+            setStatus(elements.newPasswordStatus, "Set a permanent password to finish login.");
+            show("newPassword");
+            return;
+          }
+
+          saveSession(result.AuthenticationResult, email);
+          renderExistingSession();
+        } catch (error) {
+          setStatus(elements.loginStatus, error.message, "error");
+        } finally {
+          elements.loginButton.disabled = false;
+        }
+      });
+
+      elements.newPasswordForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        elements.newPasswordButton.disabled = true;
+        setStatus(elements.newPasswordStatus, "Setting password...");
+
+        const form = new FormData(elements.newPasswordForm);
+        const newPassword = String(form.get("newPassword") || "");
+
+        try {
+          const result = await cognitoRequest("RespondToAuthChallenge", {
+            ClientId: cognito.clientId,
+            ChallengeName: "NEW_PASSWORD_REQUIRED",
+            Session: state.challengeSession,
+            ChallengeResponses: {
+              USERNAME: state.challengeUsername,
+              NEW_PASSWORD: newPassword,
+            },
+          });
+
+          saveSession(result.AuthenticationResult, state.displayEmail);
+          renderExistingSession();
+        } catch (error) {
+          setStatus(elements.newPasswordStatus, error.message, "error");
+        } finally {
+          elements.newPasswordButton.disabled = false;
+        }
+      });
+
+      elements.logoutButton.addEventListener("click", () => {
+        clearSession();
+        elements.loginForm.reset();
+        elements.newPasswordForm.reset();
+        setStatus(elements.loginStatus, "");
+        show("login");
+      });
+
+      renderExistingSession();
+    </script>
+  </body>
+</html>

@@ -34,3 +34,9 @@ jobs:
           aws s3 cp current.json s3://lol-buck-mx/current.json \
             --content-type application/json \
             --cache-control "no-store, no-cache, must-revalidate, max-age=0"
+
+      - name: Upload admin.html
+        run: |
+          aws s3 cp admin.html s3://lol-buck-mx/admin.html \
+            --content-type text/html \
+            --cache-control "no-store, no-cache, must-revalidate, max-age=0"

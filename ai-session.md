@@ -22,6 +22,37 @@ When continuing work in a future AI session:
 
 ## Sessions
 
+### 2026-04-25 - Added Admin Login Page Prototype
+
+#### What Changed
+
+Added `admin.html`, a standalone mobile-friendly Cognito login/logout page.
+
+The page supports:
+
+- normal Cognito username/password login
+- first-login `NEW_PASSWORD_REQUIRED` password change
+- session display after credentials are accepted
+- sign out by clearing browser `sessionStorage`
+
+The page does not call `POST /current` yet and cannot change the redirect target.
+
+Updated the GitHub Actions deploy workflow to upload:
+
+```text
+s3://lol-buck-mx/admin.html
+```
+
+#### AWS Permission Update
+
+Updated the GitHub Actions deploy role policy to allow `s3:PutObject` on exactly:
+
+```text
+arn:aws:s3:::lol-buck-mx/index.html
+arn:aws:s3:::lol-buck-mx/current.json
+arn:aws:s3:::lol-buck-mx/admin.html
+```
+
 ### 2026-04-25 - Created Real Cognito Admin User
 
 #### What Changed
