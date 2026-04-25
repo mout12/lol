@@ -22,6 +22,12 @@ When continuing work in a future AI session:
 
 ## Sessions
 
+### 2026-04-25 - Updated Active Redirect Target
+
+#### What Changed
+
+Updated `current.json` so the active redirect target matches the April 25 URL from the prior date-based redirect logic instead of `https://x.com`.
+
 ### 2026-04-25 - Repo-Managed Redirect Target Prototype
 
 #### What Changed
