@@ -22,6 +22,52 @@ When continuing work in a future AI session:
 
 ## Sessions
 
+### 2026-04-25 - Added Lambda Writer Source
+
+#### What Changed
+
+Added repo-tracked Lambda source under `lambda/update_current_json.py` for updating `s3://lol-buck-mx/current.json`.
+
+The Lambda validates that submitted URLs use `http://` or `https://`, then writes `current.json` with no-store cache headers.
+
+#### AWS Resources Created
+
+Created Lambda execution role:
+
+```text
+lambda-lol-current-json-writer
+```
+
+The role has basic Lambda logging permission and an inline policy allowing `s3:PutObject` only on:
+
+```text
+arn:aws:s3:::lol-buck-mx/current.json
+```
+
+Created Lambda function:
+
+```text
+lol-update-current-json
+```
+
+The function uses:
+
+```text
+runtime: python3.12
+handler: update_current_json.handler
+environment:
+  REDIRECT_BUCKET=lol-buck-mx
+  REDIRECT_KEY=current.json
+```
+
+#### Verification
+
+Invoked the Lambda with the current active redirect URL. It returned status 200 and wrote the expected JSON to `s3://lol-buck-mx/current.json`.
+
+Invoked the Lambda with `javascript:alert(1)`. The function returned application-level status 400 and did not accept the URL.
+
+The Lambda has not been exposed through a public API yet.
+
 ### 2026-04-25 - Updated Active Redirect Target
 
 #### What Changed
