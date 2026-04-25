@@ -15,6 +15,10 @@ Cognito app client:
   name: lol-admin-web
   id: mjj7ggl6ti48cu6s8qutdek1k
 
+Cognito admin user:
+  email: <admin-email>
+  status: FORCE_CHANGE_PASSWORD until first login
+
 HTTP API:
   name: lol-admin-api
   id: gil40t7dfi
@@ -43,6 +47,6 @@ Unauthenticated requests return `401 Unauthorized`.
 
 ## Current Limits
 
-- No real admin user has been created yet.
+- The real admin user exists, but still needs to complete first login and set a permanent password.
 - CORS currently allows all origins for the prototype API. Tighten this to the admin site origin when `admin.lol.buck.mx` exists.
 - The API only supports setting the current URL. URL history/list support still needs storage and routes.

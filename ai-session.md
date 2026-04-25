@@ -22,6 +22,30 @@ When continuing work in a future AI session:
 
 ## Sessions
 
+### 2026-04-25 - Created Real Cognito Admin User
+
+#### What Changed
+
+Created the real Cognito admin user for the owner email address.
+
+```text
+<admin-email>
+```
+
+The user is enabled in the `lol-admin-users` user pool and is currently in:
+
+```text
+FORCE_CHANGE_PASSWORD
+```
+
+This is expected until the first login completes and a permanent password is set. Cognito was allowed to send the invite/temporary password by email rather than recording a password in the repo or chat.
+
+Updated `docs/admin-api.md` with the admin user status.
+
+#### Next Step
+
+Build the minimal admin login page so the admin user can complete the first-login password change and then call the protected `POST /current` endpoint from a phone.
+
 ### 2026-04-25 - Admin Redirect Goal Progress Checkpoint
 
 #### Goal
