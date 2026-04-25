@@ -22,6 +22,38 @@ When continuing work in a future AI session:
 
 ## Sessions
 
+### 2026-04-25 - Protected Admin API Prototype
+
+#### What Changed
+
+Created a Cognito-protected HTTP API route for updating the active redirect URL through the existing Lambda writer.
+
+AWS resources:
+
+```text
+Cognito user pool: lol-admin-users / us-east-2_J0l6jb3qZ
+Cognito app client: lol-admin-web / mjj7ggl6ti48cu6s8qutdek1k
+HTTP API: lol-admin-api / gil40t7dfi
+HTTP API endpoint: https://gil40t7dfi.execute-api.us-east-2.amazonaws.com
+Protected route: POST /current
+Authorizer: lol-admin-cognito / 0gnx1a
+Lambda integration: lol-update-current-json
+```
+
+Added `docs/admin-api.md` with the non-secret resource IDs and current limits.
+
+#### Verification
+
+Called `POST /current` without an authorization token. API Gateway returned `401 Unauthorized`.
+
+Created a disposable Cognito test user, authenticated once, and called `POST /current` with a bearer token. The endpoint returned `200` and wrote the expected URL to `s3://lol-buck-mx/current.json`.
+
+Deleted the disposable Cognito test user and removed local temporary auth files.
+
+#### Follow-Up
+
+No real admin user exists yet. The next step is to create the actual admin login path and a small mobile admin page. CORS is currently open for prototype testing and should be restricted once `admin.lol.buck.mx` is configured.
+
 ### 2026-04-25 - Added Lambda Writer Source
 
 #### What Changed
