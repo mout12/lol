@@ -22,6 +22,43 @@ When continuing work in a future AI session:
 
 ## Sessions
 
+### 2026-04-25 - Admin Redirect Goal Progress Checkpoint
+
+#### Goal
+
+Build toward a phone-friendly admin page where the owner can log in, paste redirect URLs, see previous submissions, and select the active URL that public visitors are redirected to.
+
+#### Current State
+
+The public redirect path is working:
+
+```text
+visitor -> lol.buck.mx / cached GoDaddy 301 -> S3 index.html -> S3 current.json -> selected URL
+```
+
+`current.json` is currently the source of truth for the active redirect URL.
+
+A protected backend write path now exists:
+
+```text
+authenticated POST /current -> API Gateway -> Cognito JWT authorizer -> Lambda -> overwrite s3://lol-buck-mx/current.json
+```
+
+The protected endpoint was tested successfully with a disposable Cognito user, and unauthenticated requests returned `401 Unauthorized`.
+
+No real admin user or admin page exists yet.
+
+#### Next Steps
+
+1. Create the real admin Cognito user.
+2. Build a minimal mobile-friendly admin page that can log in and call `POST /current`.
+3. Deploy the admin page for testing, initially on S3 or a simple path.
+4. Add storage for prior URL submissions. The simplest prototype can use an S3 `history.json`; a more durable version can use DynamoDB.
+5. Add admin UI list behavior: show prior URLs, add a pasted URL, and tap a prior URL to make it active.
+6. Configure `admin.lol.buck.mx` once the basic admin page works.
+7. Restrict API CORS from the current prototype `*` origin to the real admin origin after the admin domain is configured.
+8. Once the admin flow is reliable, stop treating GitHub edits to `current.json` as the normal management path. GitHub should remain the code/deploy path, while the admin page becomes the URL management path.
+
 ### 2026-04-25 - Protected Admin API Prototype
 
 #### What Changed
