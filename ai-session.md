@@ -22,6 +22,34 @@ When continuing work in a future AI session:
 
 ## Sessions
 
+### 2026-04-25 - Redacted AWS Identifiers From Public Logs
+
+#### What Changed
+
+After the initial AI session log was added, the user manually squashed the log-file commits and force-pushed the cleaned history to GitHub.
+
+The workflow was then updated to read the deploy role ARN from a GitHub Actions secret instead of a GitHub Actions variable:
+
+```yaml
+role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+```
+
+This prevents future GitHub Actions logs from printing the full AWS role ARN.
+
+The old unmasked GitHub Actions variable was deleted after the secret was created.
+
+#### Verification
+
+- Current branch content is redacted.
+- GitHub code search did not find the AWS account number.
+- GitHub commit search did not find the AWS account number.
+- Old workflow runs that printed the unmasked role ARN were deleted.
+- The latest workflow run showed the role as `***` in logs.
+
+#### Residual Risk
+
+Some old unreachable commits may remain directly retrievable by full SHA for some period after a force-push. They are no longer reachable from branches or tags, and they did not appear in GitHub search during this session. If full purging is required, use GitHub Support's sensitive-data removal process.
+
 ### 2026-04-25 - Initial Local Repo, GitHub Push, and S3 Auto-Deploy
 
 #### What Changed
