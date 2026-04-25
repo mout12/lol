@@ -38,9 +38,18 @@ Added `current.json` as the repo-managed source of truth for the active redirect
 
 Updated the GitHub Actions S3 deploy workflow to upload both `index.html` and `current.json` with no-store cache headers.
 
-#### Follow-Up Risk
+#### AWS Permission Update
 
-The AWS deploy role may currently only allow writing `s3://lol-buck-mx/index.html`. If so, the next deploy will fail until the role policy also permits `s3:PutObject` on `s3://lol-buck-mx/current.json`.
+The first GitHub Actions deploy after this change failed because the AWS deploy role only allowed `s3:PutObject` on `s3://lol-buck-mx/index.html`.
+
+The inline role policy `AllowUploadLolIndexHtml` was updated to allow `s3:PutObject` on exactly:
+
+```text
+arn:aws:s3:::lol-buck-mx/index.html
+arn:aws:s3:::lol-buck-mx/current.json
+```
+
+The failed deploy run was rerun successfully after the policy update.
 
 ### 2026-04-25 - Redacted AWS Identifiers From Public Logs
 
