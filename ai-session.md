@@ -22,6 +22,26 @@ When continuing work in a future AI session:
 
 ## Sessions
 
+### 2026-04-25 - Repo-Managed Redirect Target Prototype
+
+#### What Changed
+
+Replaced the date-based redirect logic in `index.html` with a fetch of `./current.json`.
+
+Added `current.json` as the repo-managed source of truth for the active redirect URL:
+
+```json
+{
+  "url": "https://x.com"
+}
+```
+
+Updated the GitHub Actions S3 deploy workflow to upload both `index.html` and `current.json` with no-store cache headers.
+
+#### Follow-Up Risk
+
+The AWS deploy role may currently only allow writing `s3://lol-buck-mx/index.html`. If so, the next deploy will fail until the role policy also permits `s3:PutObject` on `s3://lol-buck-mx/current.json`.
+
 ### 2026-04-25 - Redacted AWS Identifiers From Public Logs
 
 #### What Changed

@@ -2,34 +2,29 @@
 <html>
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Redirecting...</title>
     <script>
-      const today = new Date();
-      const year = today.getFullYear();
-      const month = today.getMonth(); // 0 = Jan, so 3 = April
-      const day = today.getDate();
+      fetch("./current.json", { cache: "no-store" })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("Redirect config unavailable");
+          }
 
-      // Only run if it's April
-      if (month === 3 && day >= 17 && day <= 27) {
-        const redirects = {
-          17: "https://th.bing.com/th/id/R.f70cee6b68a8b263e79c560ac3e144ae?rik=NyL5gWoHG0kntQ&riu=http%3a%2f%2fde.ancensored.com%2fsites%2fdefault%2ffiles%2fimages%2fgalleries%2fdata%2fpic%2f00%2f28%2f26%2fnaff-total-n-01.jpg&ehk=2iERx%2bR0Uuvx%2bgEMYLB2eseyRS0QWIZWwFEpcoKh0PA%3d&risl=&pid=ImgRaw&r=0",
-          18: "https://th.bing.com/th/id/R.f70cee6b68a8b263e79c560ac3e144ae?rik=NyL5gWoHG0kntQ&riu=http%3a%2f%2fde.ancensored.com%2fsites%2fdefault%2ffiles%2fimages%2fgalleries%2fdata%2fpic%2f00%2f28%2f26%2fnaff-total-n-01.jpg&ehk=2iERx%2bR0Uuvx%2bgEMYLB2eseyRS0QWIZWwFEpcoKh0PA%3d&risl=&pid=ImgRaw&r=0",
-          19: "https://lol-buck-mx.s3.us-east-2.amazonaws.com/Unknown.jpeg",
-          20: "https://lol-buck-mx.s3.us-east-2.amazonaws.com/cereal.gif",
-          21: "https://lol-buck-mx.s3.us-east-2.amazonaws.com/lol.webm",
-          22: "https://github.comhttps://i.kym-cdn.com/photos/images/newsfeed/002/848/748/680.jpg",
-          23: "https://x.com",
-          24: "https://th.bing.com/th/id/R.f70cee6b68a8b263e79c560ac3e144ae?rik=NyL5gWoHG0kntQ&riu=http%3a%2f%2fde.ancensored.com%2fsites%2fdefault%2ffiles%2fimages%2fgalleries%2fdata%2fpic%2f00%2f28%2f26%2fnaff-total-n-01.jpg&ehk=2iERx%2bR0Uuvx%2bgEMYLB2eseyRS0QWIZWwFEpcoKh0PA%3d&risl=&pid=ImgRaw&r=0",
-          25: "https://th.bing.com/th/id/R.f70cee6b68a8b263e79c560ac3e144ae?rik=NyL5gWoHG0kntQ&riu=http%3a%2f%2fde.ancensored.com%2fsites%2fdefault%2ffiles%2fimages%2fgalleries%2fdata%2fpic%2f00%2f28%2f26%2fnaff-total-n-01.jpg&ehk=2iERx%2bR0Uuvx%2bgEMYLB2eseyRS0QWIZWwFEpcoKh0PA%3d&risl=&pid=ImgRaw&r=0",
-          26: "https://th.bing.com/th/id/R.f70cee6b68a8b263e79c560ac3e144ae?rik=NyL5gWoHG0kntQ&riu=http%3a%2f%2fde.ancensored.com%2fsites%2fdefault%2ffiles%2fimages%2fgalleries%2fdata%2fpic%2f00%2f28%2f26%2fnaff-total-n-01.jpg&ehk=2iERx%2bR0Uuvx%2bgEMYLB2eseyRS0QWIZWwFEpcoKh0PA%3d&risl=&pid=ImgRaw&r=0",
-          27: "https://th.bing.com/th/id/R.f70cee6b68a8b263e79c560ac3e144ae?rik=NyL5gWoHG0kntQ&riu=http%3a%2f%2fde.ancensored.com%2fsites%2fdefault%2ffiles%2fimages%2fgalleries%2fdata%2fpic%2f00%2f28%2f26%2fnaff-total-n-01.jpg&ehk=2iERx%2bR0Uuvx%2bgEMYLB2eseyRS0QWIZWwFEpcoKh0PA%3d&risl=&pid=ImgRaw&r=0"
-        };
+          return response.json();
+        })
+        .then((data) => {
+          if (typeof data.url !== "string" || !/^https?:\/\//.test(data.url)) {
+            throw new Error("Redirect config is invalid");
+          }
 
-        const redirectUrl = redirects[day];
-        if (redirectUrl) {
-          window.location.href = redirectUrl;
-        }
-      }
+          window.location.replace(data.url);
+        })
+        .catch(() => {
+          document.addEventListener("DOMContentLoaded", () => {
+            document.body.textContent = "Redirect unavailable.";
+          });
+        });
     </script>
   </head>
   <body>
