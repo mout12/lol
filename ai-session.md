@@ -49,6 +49,10 @@ Updated `admin.html` with a focused usability pass:
 - Two-step delete confirmation for history items.
 - Clearer status feedback after copy, update, select-from-history, and delete actions.
 
+#### Follow-Up Fix
+
+After testing, simplified history rows back to a single aligned label line, used API responses directly after successful updates instead of immediately reloading JSON state, and added a canonical admin-domain redirect so older S3/CloudFront admin URLs do not hit CORS failures.
+
 ### 2026-04-26 - Added AWS Budget Alert
 
 #### What Changed

@@ -259,8 +259,7 @@
       .history-item {
         width: 100%;
         min-height: 0;
-        display: grid;
-        gap: 4px;
+        display: block;
         padding: 10px 11px;
         border: 1px solid var(--line);
         color: var(--text);
@@ -271,23 +270,7 @@
         overflow-wrap: anywhere;
       }
 
-      .history-label {
-        min-width: 0;
-        overflow-wrap: anywhere;
-      }
-
-      .history-meta {
-        min-width: 0;
-        color: var(--muted);
-        font-size: 12px;
-        font-weight: 500;
-        line-height: 1.35;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      .history-item.url-only .history-label {
+      .history-item.url-only {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -455,6 +438,14 @@
     </main>
 
     <script>
+      const canonicalAdminOrigin = "https://admin.lol.buck.mx";
+      if (
+        window.location.protocol.startsWith("http") &&
+        window.location.origin !== canonicalAdminOrigin
+      ) {
+        window.location.replace(`${canonicalAdminOrigin}${window.location.pathname}`);
+      }
+
       const cognito = {
         region: "us-east-2",
         clientId: "mjj7ggl6ti48cu6s8qutdek1k",
@@ -558,14 +549,6 @@
         return parsed.href;
       }
 
-      function displayHost(url) {
-        try {
-          return new URL(url).host;
-        } catch {
-          return "";
-        }
-      }
-
       function setLinkState(link, url) {
         if (url) {
           link.href = url;
@@ -619,22 +602,12 @@
           const deleteButton = document.createElement("button");
           const description =
             typeof item.description === "string" ? item.description.trim() : "";
-          const label = document.createElement("span");
-          const meta = document.createElement("span");
           row.className = "history-row";
           button.type = "button";
           button.className = "history-item";
+          button.textContent = description || item.url;
           button.title = item.url;
           button.dataset.url = item.url;
-          label.className = "history-label";
-          label.textContent = description || item.url;
-          meta.className = "history-meta";
-          meta.textContent = [
-            description ? displayHost(item.url) : "",
-            typeof item.updatedAt === "string" ? item.updatedAt.replace("T", " ") : "",
-          ]
-            .filter(Boolean)
-            .join(" · ");
           deleteButton.type = "button";
           deleteButton.className = "delete-history";
           deleteButton.textContent = "X";
@@ -647,11 +620,6 @@
 
           if (item.url === activeUrl) {
             button.classList.add("active");
-          }
-
-          button.append(label);
-          if (meta.textContent) {
-            button.append(meta);
           }
 
           row.append(button, deleteButton);
@@ -673,6 +641,13 @@
         } catch (error) {
           setStatus(elements.sessionStatus, error.message, "error");
         }
+      }
+
+      function applyRedirectUpdate(data) {
+        const activeUrl = typeof data.url === "string" ? data.url : "";
+        const urls = Array.isArray(data.history) ? data.history : [];
+        renderCurrentUrl(activeUrl);
+        renderHistory(urls, activeUrl);
       }
 
       function renderTargetPreview() {
@@ -715,6 +690,10 @@
             "Content-Type": "application/json",
           },
           body: JSON.stringify(payload),
+        }).catch(() => {
+          throw new Error(
+            "Could not reach the admin API. Open https://admin.lol.buck.mx and try again."
+          );
         });
 
         const data = await response.json().catch(() => ({}));
@@ -738,6 +717,10 @@
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ action: "delete", url }),
+        }).catch(() => {
+          throw new Error(
+            "Could not reach the admin API. Open https://admin.lol.buck.mx and try again."
+          );
         });
 
         const data = await response.json().catch(() => ({}));
@@ -840,8 +823,8 @@
         try {
           const url = validateRedirectUrl(String(form.get("redirectUrl") || "").trim());
           const description = String(form.get("description") || "").trim();
-          await setRedirectUrl(url, description);
-          await loadRedirectState();
+          const data = await setRedirectUrl(url, description);
+          applyRedirectUpdate(data);
           elements.redirectForm.reset();
           renderTargetPreview();
           setStatus(elements.sessionStatus, "Redirect updated.", "ok");
@@ -876,8 +859,9 @@
           setStatus(elements.sessionStatus, "Deleting history item...");
 
           try {
-            await deleteHistoryUrl(deleteButton.dataset.deleteUrl);
-            await loadRedirectState();
+            const data = await deleteHistoryUrl(deleteButton.dataset.deleteUrl);
+            const activeUrl = elements.currentUrl.textContent.trim();
+            renderHistory(Array.isArray(data.history) ? data.history : [], activeUrl);
             setStatus(elements.sessionStatus, "History item deleted.", "ok");
           } catch (error) {
             setStatus(elements.sessionStatus, error.message, "error");
@@ -901,8 +885,8 @@
         setStatus(elements.sessionStatus, "Updating redirect...");
 
         try {
-          await setRedirectUrl(button.dataset.url);
-          await loadRedirectState();
+          const data = await setRedirectUrl(button.dataset.url);
+          applyRedirectUpdate(data);
           elements.redirectForm.reset();
           renderTargetPreview();
           setStatus(elements.sessionStatus, "Redirect updated.", "ok");
