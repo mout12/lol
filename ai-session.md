@@ -36,6 +36,19 @@ When continuing work in a future AI session:
 
 ## Sessions
 
+### 2026-04-26 - Polished Admin Panel UX
+
+#### What Changed
+
+Updated `admin.html` with a focused usability pass:
+
+- Wider, more comfortable admin layout with responsive mobile stacking.
+- Current redirect actions for opening and copying the active URL.
+- Live pasted-URL preview that shows the target host and enables an open-test action.
+- Richer history rows that show descriptions, hostnames, and update timestamps when available.
+- Two-step delete confirmation for history items.
+- Clearer status feedback after copy, update, select-from-history, and delete actions.
+
 ### 2026-04-26 - Added AWS Budget Alert
 
 #### What Changed

@@ -14,8 +14,11 @@
         --line: #d8dee8;
         --accent: #0f766e;
         --accent-dark: #115e59;
+        --accent-soft: #ecfdf8;
         --danger: #b42318;
+        --danger-soft: #fff1f0;
         --ok: #067647;
+        --shadow: 0 8px 30px rgba(15, 23, 42, 0.06);
       }
 
       * {
@@ -31,9 +34,9 @@
       }
 
       main {
-        width: min(100%, 440px);
+        width: min(100%, 620px);
         margin: 0 auto;
-        padding: 28px 18px;
+        padding: 28px 18px 40px;
       }
 
       h1 {
@@ -43,8 +46,16 @@
         letter-spacing: 0;
       }
 
+      .app-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 18px;
+      }
+
       .subtitle {
-        margin: 0 0 22px;
+        margin: 0;
         color: var(--muted);
         font-size: 14px;
         line-height: 1.45;
@@ -55,7 +66,7 @@
         border: 1px solid var(--line);
         border-radius: 8px;
         padding: 18px;
-        box-shadow: 0 8px 30px rgba(15, 23, 42, 0.06);
+        box-shadow: var(--shadow);
       }
 
       .field {
@@ -85,7 +96,11 @@
         outline: 3px solid rgba(15, 118, 110, 0.16);
       }
 
-      button {
+      button,
+      .button-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         width: 100%;
         min-height: 46px;
         border: 0;
@@ -93,26 +108,32 @@
         padding: 11px 14px;
         font: inherit;
         font-weight: 700;
+        text-decoration: none;
         color: #ffffff;
         background: var(--accent);
         cursor: pointer;
       }
 
-      button:disabled {
+      button:disabled,
+      .button-link.disabled {
         cursor: not-allowed;
         opacity: 0.65;
+        pointer-events: none;
       }
 
-      button.secondary {
+      button.secondary,
+      .button-link.secondary {
         color: var(--text);
         background: #e8edf2;
       }
 
-      button:not(:disabled):hover {
+      button:not(:disabled):hover,
+      .button-link:not(.disabled):hover {
         background: var(--accent-dark);
       }
 
-      button.secondary:not(:disabled):hover {
+      button.secondary:not(:disabled):hover,
+      .button-link.secondary:not(.disabled):hover {
         background: #dbe3eb;
       }
 
@@ -139,7 +160,7 @@
 
       .session {
         display: grid;
-        gap: 12px;
+        gap: 14px;
       }
 
       .session-row {
@@ -160,8 +181,8 @@
 
       .current-url {
         display: grid;
-        gap: 6px;
-        padding: 12px;
+        gap: 10px;
+        padding: 14px;
         border: 1px solid var(--line);
         border-radius: 7px;
         background: #f8fafc;
@@ -172,11 +193,35 @@
         font-size: 13px;
       }
 
-      .current-url span {
+      .current-url .url-text {
         color: var(--muted);
         font-size: 14px;
         line-height: 1.4;
         overflow-wrap: anywhere;
+      }
+
+      .current-actions,
+      .form-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .target-preview {
+        min-height: 20px;
+        margin: -4px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.4;
+        overflow-wrap: anywhere;
+      }
+
+      .target-preview.ok {
+        color: var(--ok);
+      }
+
+      .target-preview.error {
+        color: var(--danger);
       }
 
       .history {
@@ -196,9 +241,13 @@
 
       .history-row {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 38px;
+        grid-template-columns: minmax(0, 1fr) 42px;
         gap: 8px;
         align-items: stretch;
+      }
+
+      .history-row.confirming-delete {
+        grid-template-columns: minmax(0, 1fr) 76px;
       }
 
       .history-empty {
@@ -210,6 +259,8 @@
       .history-item {
         width: 100%;
         min-height: 0;
+        display: grid;
+        gap: 4px;
         padding: 10px 11px;
         border: 1px solid var(--line);
         color: var(--text);
@@ -220,7 +271,23 @@
         overflow-wrap: anywhere;
       }
 
-      .history-item.url-only {
+      .history-label {
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+
+      .history-meta {
+        min-width: 0;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 500;
+        line-height: 1.35;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .history-item.url-only .history-label {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -229,7 +296,7 @@
       .history-item.active {
         border-color: var(--accent);
         color: var(--accent-dark);
-        background: #ecfdf8;
+        background: var(--accent-soft);
       }
 
       .history-item:not(:disabled):hover {
@@ -237,13 +304,20 @@
       }
 
       .delete-history {
-        width: 38px;
+        width: 42px;
         min-height: 0;
         padding: 0;
         color: var(--danger);
-        background: #fff1f0;
+        background: var(--danger-soft);
         font-size: 18px;
         line-height: 1;
+      }
+
+      .delete-history.confirming {
+        width: auto;
+        padding: 0 8px;
+        font-size: 12px;
+        font-weight: 800;
       }
 
       .delete-history:not(:disabled):hover {
@@ -254,12 +328,36 @@
       .hidden {
         display: none !important;
       }
+
+      @media (max-width: 480px) {
+        main {
+          padding: 22px 14px 32px;
+        }
+
+        .app-header {
+          display: grid;
+          gap: 4px;
+        }
+
+        .panel {
+          padding: 16px;
+        }
+
+        .current-actions,
+        .form-actions {
+          grid-template-columns: 1fr;
+        }
+      }
     </style>
   </head>
   <body>
     <main>
-      <h1>Redirect Admin</h1>
-      <p class="subtitle">Sign in to manage the active redirect URL.</p>
+      <header class="app-header">
+        <div>
+          <h1>Redirect Admin</h1>
+          <p class="subtitle">Manage the active URL for lol.buck.mx.</p>
+        </div>
+      </header>
 
       <section id="loginPanel" class="panel">
         <form id="loginForm" class="stack">
@@ -310,7 +408,11 @@
         </div>
         <div class="current-url">
           <strong>Current redirect</strong>
-          <span id="currentUrl">Loading...</span>
+          <span id="currentUrl" class="url-text">Loading...</span>
+          <div class="current-actions">
+            <a id="openCurrentButton" class="button-link secondary disabled" href="#" target="_blank" rel="noopener">Open current</a>
+            <button id="copyCurrentButton" class="secondary" type="button" disabled>Copy URL</button>
+          </div>
         </div>
         <form id="redirectForm" class="stack">
           <div class="field">
@@ -325,6 +427,7 @@
               required
             />
           </div>
+          <p id="targetPreview" class="target-preview" aria-live="polite"></p>
           <div class="field">
             <label for="description">Description</label>
             <input
@@ -335,7 +438,10 @@
               placeholder="Optional label for history"
             />
           </div>
-          <button id="redirectButton" type="submit">Set redirect</button>
+          <div class="form-actions">
+            <button id="redirectButton" type="submit">Set redirect</button>
+            <a id="testUrlButton" class="button-link secondary disabled" href="#" target="_blank" rel="noopener">Open test</a>
+          </div>
         </form>
         <div class="history">
           <div class="history-title">Prior URLs</div>
@@ -380,8 +486,13 @@
         signedInAs: document.querySelector("#signedInAs"),
         sessionStatus: document.querySelector("#sessionStatus"),
         currentUrl: document.querySelector("#currentUrl"),
+        openCurrentButton: document.querySelector("#openCurrentButton"),
+        copyCurrentButton: document.querySelector("#copyCurrentButton"),
         redirectForm: document.querySelector("#redirectForm"),
+        redirectUrlInput: document.querySelector("#redirectUrl"),
         redirectButton: document.querySelector("#redirectButton"),
+        targetPreview: document.querySelector("#targetPreview"),
+        testUrlButton: document.querySelector("#testUrlButton"),
         historyList: document.querySelector("#historyList"),
         logoutButton: document.querySelector("#logoutButton"),
       };
@@ -447,6 +558,27 @@
         return parsed.href;
       }
 
+      function displayHost(url) {
+        try {
+          return new URL(url).host;
+        } catch {
+          return "";
+        }
+      }
+
+      function setLinkState(link, url) {
+        if (url) {
+          link.href = url;
+          link.classList.remove("disabled");
+          link.removeAttribute("aria-disabled");
+          return;
+        }
+
+        link.href = "#";
+        link.classList.add("disabled");
+        link.setAttribute("aria-disabled", "true");
+      }
+
       async function fetchJson(url, fallback) {
         const response = await fetch(url, { cache: "no-store" });
         if (response.status === 404) {
@@ -462,6 +594,8 @@
 
       function renderCurrentUrl(url) {
         elements.currentUrl.textContent = url || "No active redirect found.";
+        setLinkState(elements.openCurrentButton, url);
+        elements.copyCurrentButton.disabled = !url;
       }
 
       function renderHistory(urls, activeUrl) {
@@ -485,12 +619,22 @@
           const deleteButton = document.createElement("button");
           const description =
             typeof item.description === "string" ? item.description.trim() : "";
+          const label = document.createElement("span");
+          const meta = document.createElement("span");
           row.className = "history-row";
           button.type = "button";
           button.className = "history-item";
-          button.textContent = description || item.url;
           button.title = item.url;
           button.dataset.url = item.url;
+          label.className = "history-label";
+          label.textContent = description || item.url;
+          meta.className = "history-meta";
+          meta.textContent = [
+            description ? displayHost(item.url) : "",
+            typeof item.updatedAt === "string" ? item.updatedAt.replace("T", " ") : "",
+          ]
+            .filter(Boolean)
+            .join(" · ");
           deleteButton.type = "button";
           deleteButton.className = "delete-history";
           deleteButton.textContent = "X";
@@ -503,6 +647,11 @@
 
           if (item.url === activeUrl) {
             button.classList.add("active");
+          }
+
+          button.append(label);
+          if (meta.textContent) {
+            button.append(meta);
           }
 
           row.append(button, deleteButton);
@@ -523,6 +672,28 @@
           renderHistory(urls, activeUrl);
         } catch (error) {
           setStatus(elements.sessionStatus, error.message, "error");
+        }
+      }
+
+      function renderTargetPreview() {
+        const value = elements.redirectUrlInput.value.trim();
+        elements.targetPreview.classList.remove("ok", "error");
+
+        if (!value) {
+          elements.targetPreview.textContent = "";
+          setLinkState(elements.testUrlButton, "");
+          return;
+        }
+
+        try {
+          const url = validateRedirectUrl(value);
+          elements.targetPreview.textContent = `Target: ${new URL(url).host}`;
+          elements.targetPreview.classList.add("ok");
+          setLinkState(elements.testUrlButton, url);
+        } catch (error) {
+          elements.targetPreview.textContent = error.message;
+          elements.targetPreview.classList.add("error");
+          setLinkState(elements.testUrlButton, "");
         }
       }
 
@@ -672,6 +843,7 @@
           await setRedirectUrl(url, description);
           await loadRedirectState();
           elements.redirectForm.reset();
+          renderTargetPreview();
           setStatus(elements.sessionStatus, "Redirect updated.", "ok");
         } catch (error) {
           setStatus(elements.sessionStatus, error.message, "error");
@@ -683,6 +855,23 @@
       elements.historyList.addEventListener("click", async (event) => {
         const deleteButton = event.target.closest("button[data-delete-url]");
         if (deleteButton) {
+          if (deleteButton.dataset.confirming !== "true") {
+            deleteButton.dataset.confirming = "true";
+            deleteButton.closest(".history-row").classList.add("confirming-delete");
+            deleteButton.classList.add("confirming");
+            deleteButton.textContent = "Delete?";
+            setStatus(elements.sessionStatus, "Tap Delete? again to remove this history item.");
+            window.setTimeout(() => {
+              if (deleteButton.dataset.confirming === "true") {
+                deleteButton.dataset.confirming = "";
+                deleteButton.closest(".history-row").classList.remove("confirming-delete");
+                deleteButton.classList.remove("confirming");
+                deleteButton.textContent = "X";
+              }
+            }, 3200);
+            return;
+          }
+
           deleteButton.disabled = true;
           setStatus(elements.sessionStatus, "Deleting history item...");
 
@@ -693,6 +882,10 @@
           } catch (error) {
             setStatus(elements.sessionStatus, error.message, "error");
           } finally {
+            deleteButton.dataset.confirming = "";
+            deleteButton.closest(".history-row")?.classList.remove("confirming-delete");
+            deleteButton.classList.remove("confirming");
+            deleteButton.textContent = "X";
             deleteButton.disabled = false;
           }
           return;
@@ -711,6 +904,7 @@
           await setRedirectUrl(button.dataset.url);
           await loadRedirectState();
           elements.redirectForm.reset();
+          renderTargetPreview();
           setStatus(elements.sessionStatus, "Redirect updated.", "ok");
         } catch (error) {
           setStatus(elements.sessionStatus, error.message, "error");
@@ -727,6 +921,22 @@
         elements.redirectForm.reset();
         setStatus(elements.loginStatus, "");
         show("login");
+      });
+
+      elements.redirectUrlInput.addEventListener("input", renderTargetPreview);
+
+      elements.copyCurrentButton.addEventListener("click", async () => {
+        const url = elements.currentUrl.textContent.trim();
+        if (!url || url === "No active redirect found.") {
+          return;
+        }
+
+        try {
+          await navigator.clipboard.writeText(url);
+          setStatus(elements.sessionStatus, "Current URL copied.", "ok");
+        } catch {
+          setStatus(elements.sessionStatus, "Could not copy URL from this browser.", "error");
+        }
       });
 
       renderExistingSession();
