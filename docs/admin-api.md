@@ -9,11 +9,11 @@ Region: us-east-2
 
 Cognito user pool:
   name: lol-admin-users
-  id: us-east-2_J0l6jb3qZ
+  id: <cognito-user-pool-id>
 
 Cognito app client:
   name: lol-admin-web
-  id: mjj7ggl6ti48cu6s8qutdek1k
+  id: <cognito-app-client-id>
 
 Cognito admin user:
   email: <admin-email>
@@ -21,8 +21,9 @@ Cognito admin user:
 
 HTTP API:
   name: lol-admin-api
-  id: gil40t7dfi
-  endpoint: https://gil40t7dfi.execute-api.us-east-2.amazonaws.com
+  id: <admin-api-id>
+  endpoint: <admin-api-endpoint>
+  CORS allow origin: https://admin.lol.buck.mx
 
 Protected route:
   POST /current
@@ -31,12 +32,22 @@ Lambda integration:
   function: lol-update-current-json
 
 Admin login page:
+  URL: https://admin.lol.buck.mx
   object: s3://lol-buck-mx/admin.html
+
+Admin HTTPS hosting:
+  CloudFront distribution: <cloudfront-distribution-id>
+  CloudFront domain: <cloudfront-domain>
+  ACM certificate: arn:aws:acm:us-east-1:<account-id>:certificate/<certificate-id>
+  GoDaddy CNAME: admin.lol -> <cloudfront-domain>
+  GoDaddy ACM validation CNAME: <acm-validation-cname-name> -> <acm-validation-cname-value>
 
 Admin-managed redirect state:
   current: s3://lol-buck-mx/current.json
   history: s3://lol-buck-mx/history.json
 ```
+
+The redirect state file contract is documented in [`redirect-state.md`](redirect-state.md).
 
 ## Behavior
 
@@ -65,9 +76,14 @@ for removing a URL from history without changing `current.json`.
 
 Unauthenticated requests return `401 Unauthorized`.
 
+Browser calls are allowed only from:
+
+```text
+https://admin.lol.buck.mx
+```
+
 ## Current Limits
 
 - The real admin user exists, but still needs to complete first login and set a permanent password through `admin.html`.
 - `admin.html` can now set the active redirect URL through the protected `POST /current` endpoint.
-- CORS currently allows all origins for the prototype API. Tighten this to the admin site origin when `admin.lol.buck.mx` exists.
 - GitHub Actions no longer uploads `current.json`; the admin page/API are now the management path for active redirect state.

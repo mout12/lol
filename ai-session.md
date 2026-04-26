@@ -16,11 +16,63 @@ When continuing work in a future AI session:
 - Main branch: `main`
 - S3 bucket: `lol-buck-mx`
 - Deployed object: `s3://lol-buck-mx/index.html`
+- Admin site: `https://admin.lol.buck.mx`
 - AWS account used for deploy role: `<account-id>`
 - GitHub Actions workflow: `.github/workflows/deploy-s3.yml`
 - AWS deploy role: `arn:aws:iam::<account-id>:role/github-lol-s3-deploy`
 
 ## Sessions
+
+### 2026-04-26 - Configured Admin Subdomain And Restricted CORS
+
+#### What Changed
+
+Configured `https://admin.lol.buck.mx` for the admin page using:
+
+```text
+CloudFront distribution: <cloudfront-distribution-id>
+CloudFront domain: <cloudfront-domain>
+ACM certificate: arn:aws:acm:us-east-1:<account-id>:certificate/<certificate-id>
+S3 origin: lol-buck-mx.s3.us-east-2.amazonaws.com
+Default root object: admin.html
+```
+
+Added GoDaddy DNS records:
+
+```text
+CNAME admin.lol -> <cloudfront-domain>
+CNAME <acm-validation-cname-name> -> <acm-validation-cname-value>
+```
+
+Restricted API Gateway CORS for `lol-admin-api` from wildcard origins to:
+
+```text
+https://admin.lol.buck.mx
+```
+
+#### Verification
+
+Verified:
+
+- ACM certificate issued successfully.
+- CloudFront distribution deployed.
+- `https://admin.lol.buck.mx` returns `200`.
+- `https://admin.lol.buck.mx/current.json` returns `200`.
+- `https://admin.lol.buck.mx/history.json` returns `200`.
+- API Gateway preflight from `https://admin.lol.buck.mx` returns CORS allow headers.
+- API Gateway preflight from `https://example.com` does not return CORS allow headers.
+
+### 2026-04-26 - Documented Redirect State Contract
+
+#### What Changed
+
+Deleted the stale repo-tracked `current.json` file. The active redirect state remains in:
+
+```text
+s3://lol-buck-mx/current.json
+```
+
+Added `docs/redirect-state.md` to document the expected `current.json` and `history.json` shapes for future hosting/provider migrations.
 
 ### 2026-04-25 - Cleared Admin Redirect Form After Updates
 
@@ -116,7 +168,7 @@ After these are implemented and verified, add a follow-up session log entry conf
 Updated `admin.html` so a signed-in admin can paste a URL and submit it to:
 
 ```text
-POST https://gil40t7dfi.execute-api.us-east-2.amazonaws.com/current
+POST <admin-api-endpoint>/current
 ```
 
 The page sends the Cognito ID token as a bearer token and validates that the URL uses `http://` or `https://` before making the request.
@@ -224,12 +276,12 @@ Created a Cognito-protected HTTP API route for updating the active redirect URL 
 AWS resources:
 
 ```text
-Cognito user pool: lol-admin-users / us-east-2_J0l6jb3qZ
-Cognito app client: lol-admin-web / mjj7ggl6ti48cu6s8qutdek1k
-HTTP API: lol-admin-api / gil40t7dfi
-HTTP API endpoint: https://gil40t7dfi.execute-api.us-east-2.amazonaws.com
+Cognito user pool: lol-admin-users / <cognito-user-pool-id>
+Cognito app client: lol-admin-web / <cognito-app-client-id>
+HTTP API: lol-admin-api / <admin-api-id>
+HTTP API endpoint: <admin-api-endpoint>
 Protected route: POST /current
-Authorizer: lol-admin-cognito / 0gnx1a
+Authorizer: lol-admin-cognito / <authorizer-id>
 Lambda integration: lol-update-current-json
 ```
 
