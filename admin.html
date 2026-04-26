@@ -194,6 +194,13 @@
         gap: 8px;
       }
 
+      .history-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 38px;
+        gap: 8px;
+        align-items: stretch;
+      }
+
       .history-empty {
         margin: 0;
         color: var(--muted);
@@ -227,6 +234,21 @@
 
       .history-item:not(:disabled):hover {
         background: #f8fafc;
+      }
+
+      .delete-history {
+        width: 38px;
+        min-height: 0;
+        padding: 0;
+        color: var(--danger);
+        background: #fff1f0;
+        font-size: 18px;
+        line-height: 1;
+      }
+
+      .delete-history:not(:disabled):hover {
+        color: #ffffff;
+        background: var(--danger);
       }
 
       .hidden {
@@ -461,14 +483,22 @@
             continue;
           }
 
+          const row = document.createElement("div");
           const button = document.createElement("button");
+          const deleteButton = document.createElement("button");
           const description =
             typeof item.description === "string" ? item.description.trim() : "";
+          row.className = "history-row";
           button.type = "button";
           button.className = "history-item";
           button.textContent = description || item.url;
           button.title = item.url;
           button.dataset.url = item.url;
+          deleteButton.type = "button";
+          deleteButton.className = "delete-history";
+          deleteButton.textContent = "X";
+          deleteButton.dataset.deleteUrl = item.url;
+          deleteButton.setAttribute("aria-label", "Delete history item");
 
           if (!description) {
             button.classList.add("url-only");
@@ -478,7 +508,8 @@
             button.classList.add("active");
           }
 
-          elements.historyList.append(button);
+          row.append(button, deleteButton);
+          elements.historyList.append(row);
         }
       }
 
@@ -521,6 +552,29 @@
         const data = await response.json().catch(() => ({}));
         if (!response.ok || data.error) {
           throw new Error(data.error || data.message || "Could not update redirect.");
+        }
+
+        return data;
+      }
+
+      async function deleteHistoryUrl(url) {
+        const idToken = sessionStorage.getItem("idToken");
+        if (!idToken) {
+          throw new Error("Session expired. Sign in again.");
+        }
+
+        const response = await fetch(adminApi.currentEndpoint, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ action: "delete", url }),
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.error) {
+          throw new Error(data.error || data.message || "Could not delete history item.");
         }
 
         return data;
@@ -629,6 +683,23 @@
       });
 
       elements.historyList.addEventListener("click", async (event) => {
+        const deleteButton = event.target.closest("button[data-delete-url]");
+        if (deleteButton) {
+          deleteButton.disabled = true;
+          setStatus(elements.sessionStatus, "Deleting history item...");
+
+          try {
+            await deleteHistoryUrl(deleteButton.dataset.deleteUrl);
+            await loadRedirectState();
+            setStatus(elements.sessionStatus, "History item deleted.", "ok");
+          } catch (error) {
+            setStatus(elements.sessionStatus, error.message, "error");
+          } finally {
+            deleteButton.disabled = false;
+          }
+          return;
+        }
+
         const button = event.target.closest("button[data-url]");
         if (!button) {
           return;

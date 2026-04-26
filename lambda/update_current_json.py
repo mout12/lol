@@ -39,6 +39,14 @@ def _validate_url(value):
     return value
 
 
+def _action_payload(payload):
+    action = payload.get("action", "set")
+    if action not in ("set", "delete"):
+        raise ValueError("action must be set or delete")
+
+    return action
+
+
 def _description_payload(payload):
     if "description" not in payload:
         return False, None
@@ -103,9 +111,18 @@ def _updated_history(existing_history, url, description_was_provided, descriptio
     return history[:25]
 
 
+def _deleted_history(existing_history, url):
+    return [
+        item
+        for item in existing_history
+        if isinstance(item, dict) and item.get("url") != url
+    ]
+
+
 def handler(event, context):
     try:
         payload = _event_payload(event)
+        action = _action_payload(payload)
         url = _validate_url(payload.get("url"))
         description_was_provided, description = _description_payload(payload)
     except (json.JSONDecodeError, ValueError) as exc:
@@ -115,12 +132,14 @@ def handler(event, context):
     current_key = os.environ.get("REDIRECT_KEY", "current.json")
     history_key = os.environ.get("HISTORY_KEY", "history.json")
 
-    history = _updated_history(
-        _read_history(bucket, history_key),
-        url,
-        description_was_provided,
-        description,
-    )
+    existing_history = _read_history(bucket, history_key)
+
+    if action == "delete":
+        history = _deleted_history(existing_history, url)
+        _write_json(bucket, history_key, {"urls": history})
+        return _response(200, {"url": url, "history": history, "deleted": True})
+
+    history = _updated_history(existing_history, url, description_was_provided, description)
 
     _write_json(bucket, current_key, {"url": url})
     _write_json(bucket, history_key, {"urls": history})

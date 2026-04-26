@@ -21,4 +21,13 @@ The function validates that the URL uses `http://` or `https://`, then writes:
 
 It also records the URL in `history.json`, de-duplicated by URL with the most recently selected item first. `description` is optional and is used by the admin UI as the history display label.
 
+To delete a history item without changing `current.json`, send:
+
+```json
+{
+  "action": "delete",
+  "url": "https://example.com"
+}
+```
+
 The deployed function is intended to be the write path behind the future admin UI. The public redirect page still reads `current.json`.

@@ -22,6 +22,25 @@ When continuing work in a future AI session:
 
 ## Sessions
 
+### 2026-04-25 - Added Admin History Delete
+
+#### What Changed
+
+Added an `X` button next to each admin history item.
+
+Updated `admin.html` so tapping `X` sends:
+
+```json
+{
+  "action": "delete",
+  "url": "..."
+}
+```
+
+to the protected `POST /current` endpoint.
+
+Updated `lol-update-current-json` so `action: delete` removes the URL from `s3://lol-buck-mx/history.json` without changing `s3://lol-buck-mx/current.json`.
+
 ### 2026-04-25 - Added Admin URL Descriptions
 
 #### What Changed
