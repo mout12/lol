@@ -462,9 +462,6 @@
 
       function renderCurrentUrl(url) {
         elements.currentUrl.textContent = url || "No active redirect found.";
-        if (url) {
-          elements.redirectForm.redirectUrl.value = url;
-        }
       }
 
       function renderHistory(urls, activeUrl) {
@@ -674,6 +671,7 @@
           const description = String(form.get("description") || "").trim();
           await setRedirectUrl(url, description);
           await loadRedirectState();
+          elements.redirectForm.reset();
           setStatus(elements.sessionStatus, "Redirect updated.", "ok");
         } catch (error) {
           setStatus(elements.sessionStatus, error.message, "error");
@@ -712,6 +710,7 @@
         try {
           await setRedirectUrl(button.dataset.url);
           await loadRedirectState();
+          elements.redirectForm.reset();
           setStatus(elements.sessionStatus, "Redirect updated.", "ok");
         } catch (error) {
           setStatus(elements.sessionStatus, error.message, "error");

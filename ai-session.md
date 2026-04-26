@@ -22,6 +22,14 @@ When continuing work in a future AI session:
 
 ## Sessions
 
+### 2026-04-25 - Cleared Admin Redirect Form After Updates
+
+#### What Changed
+
+Updated `admin.html` so the `Redirect URL` and `Description` inputs clear after a successful redirect update.
+
+This applies both when submitting a new URL from the form and when selecting a prior URL from history.
+
 ### 2026-04-25 - Added Admin History Delete
 
 #### What Changed
