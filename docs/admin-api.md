@@ -44,12 +44,13 @@ Admin-managed redirect state:
 
 ```json
 {
-  "url": "https://example.com"
+  "url": "https://example.com",
+  "description": "Optional history label"
 }
 ```
 
 The route calls `lol-update-current-json`, which validates the URL and overwrites `s3://lol-buck-mx/current.json`.
-It also updates `s3://lol-buck-mx/history.json` with a de-duplicated list of prior selected URLs.
+It also updates `s3://lol-buck-mx/history.json` with a de-duplicated list of prior selected URLs and optional descriptions.
 
 Unauthenticated requests return `401 Unauthorized`.
 

@@ -213,6 +213,12 @@
         overflow-wrap: anywhere;
       }
 
+      .history-item.url-only {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
       .history-item.active {
         border-color: var(--accent);
         color: var(--accent-dark);
@@ -295,6 +301,16 @@
               autocomplete="url"
               placeholder="https://example.com"
               required
+            />
+          </div>
+          <div class="field">
+            <label for="description">Description</label>
+            <input
+              id="description"
+              name="description"
+              type="text"
+              autocomplete="off"
+              placeholder="Optional label for history"
             />
           </div>
           <button id="redirectButton" type="submit">Set redirect</button>
@@ -446,10 +462,17 @@
           }
 
           const button = document.createElement("button");
+          const description =
+            typeof item.description === "string" ? item.description.trim() : "";
           button.type = "button";
           button.className = "history-item";
-          button.textContent = item.url;
+          button.textContent = description || item.url;
+          button.title = item.url;
           button.dataset.url = item.url;
+
+          if (!description) {
+            button.classList.add("url-only");
+          }
 
           if (item.url === activeUrl) {
             button.classList.add("active");
@@ -475,10 +498,15 @@
         }
       }
 
-      async function setRedirectUrl(url) {
+      async function setRedirectUrl(url, description) {
         const idToken = sessionStorage.getItem("idToken");
         if (!idToken) {
           throw new Error("Session expired. Sign in again.");
+        }
+
+        const payload = { url };
+        if (typeof description === "string") {
+          payload.description = description;
         }
 
         const response = await fetch(adminApi.currentEndpoint, {
@@ -487,7 +515,7 @@
             Authorization: `Bearer ${idToken}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ url }),
+          body: JSON.stringify(payload),
         });
 
         const data = await response.json().catch(() => ({}));
@@ -589,7 +617,8 @@
 
         try {
           const url = validateRedirectUrl(String(form.get("redirectUrl") || "").trim());
-          await setRedirectUrl(url);
+          const description = String(form.get("description") || "").trim();
+          await setRedirectUrl(url, description);
           await loadRedirectState();
           setStatus(elements.sessionStatus, "Redirect updated.", "ok");
         } catch (error) {

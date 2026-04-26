@@ -39,6 +39,20 @@ def _validate_url(value):
     return value
 
 
+def _description_payload(payload):
+    if "description" not in payload:
+        return False, None
+
+    value = payload.get("description")
+    if value is None:
+        return True, ""
+
+    if not isinstance(value, str):
+        raise ValueError("description must be a string")
+
+    return True, value.strip()
+
+
 def _read_history(bucket, key):
     try:
         response = s3.get_object(Bucket=bucket, Key=key)
@@ -63,14 +77,29 @@ def _write_json(bucket, key, payload):
     )
 
 
-def _updated_history(existing_history, url):
+def _updated_history(existing_history, url, description_was_provided, description):
     now = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+    existing_item = next(
+        (
+            item
+            for item in existing_history
+            if isinstance(item, dict) and item.get("url") == url
+        ),
+        {},
+    )
+    existing_description = existing_item.get("description", "")
+    next_description = description if description_was_provided else existing_description
+    next_item = {"url": url, "updatedAt": now}
+
+    if next_description:
+        next_item["description"] = next_description
+
     history = [
         item
         for item in existing_history
         if isinstance(item, dict) and item.get("url") != url
     ]
-    history.insert(0, {"url": url, "updatedAt": now})
+    history.insert(0, next_item)
     return history[:25]
 
 
@@ -78,6 +107,7 @@ def handler(event, context):
     try:
         payload = _event_payload(event)
         url = _validate_url(payload.get("url"))
+        description_was_provided, description = _description_payload(payload)
     except (json.JSONDecodeError, ValueError) as exc:
         return _response(400, {"error": str(exc)})
 
@@ -85,7 +115,12 @@ def handler(event, context):
     current_key = os.environ.get("REDIRECT_KEY", "current.json")
     history_key = os.environ.get("HISTORY_KEY", "history.json")
 
-    history = _updated_history(_read_history(bucket, history_key), url)
+    history = _updated_history(
+        _read_history(bucket, history_key),
+        url,
+        description_was_provided,
+        description,
+    )
 
     _write_json(bucket, current_key, {"url": url})
     _write_json(bucket, history_key, {"urls": history})

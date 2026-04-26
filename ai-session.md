@@ -22,6 +22,20 @@ When continuing work in a future AI session:
 
 ## Sessions
 
+### 2026-04-25 - Added Admin URL Descriptions
+
+#### What Changed
+
+Added an optional `Description` field to `admin.html` when setting the redirect URL.
+
+Updated `lol-update-current-json` so submitted descriptions are stored in `s3://lol-buck-mx/history.json` alongside the URL and timestamp. `current.json` still stores only the full active URL.
+
+History display behavior:
+
+- If a history item has a description, the admin page displays the full description.
+- If a history item has no description, the admin page displays the URL as a single truncated line.
+- The current active redirect panel continues to show the full URL.
+
 ### 2026-04-25 - Completed Admin URL Visibility And History Work
 
 #### What Changed
