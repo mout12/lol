@@ -1,8 +1,10 @@
 import json
 import os
+from datetime import datetime, timezone
 from urllib.parse import urlparse
 
 import boto3
+from botocore.exceptions import ClientError
 
 
 s3 = boto3.client("s3")
@@ -37,17 +39,21 @@ def _validate_url(value):
     return value
 
 
-def handler(event, context):
+def _read_history(bucket, key):
     try:
-        payload = _event_payload(event)
-        url = _validate_url(payload.get("url"))
-    except (json.JSONDecodeError, ValueError) as exc:
-        return _response(400, {"error": str(exc)})
+        response = s3.get_object(Bucket=bucket, Key=key)
+    except ClientError as exc:
+        if exc.response.get("Error", {}).get("Code") in ("NoSuchKey", "404", "AccessDenied"):
+            return []
+        raise
 
-    bucket = os.environ["REDIRECT_BUCKET"]
-    key = os.environ.get("REDIRECT_KEY", "current.json")
-    body = json.dumps({"url": url}, indent=2) + "\n"
+    data = json.loads(response["Body"].read().decode("utf-8"))
+    urls = data.get("urls", [])
+    return urls if isinstance(urls, list) else []
 
+
+def _write_json(bucket, key, payload):
+    body = json.dumps(payload, indent=2) + "\n"
     s3.put_object(
         Bucket=bucket,
         Key=key,
@@ -56,4 +62,32 @@ def handler(event, context):
         CacheControl="no-store, no-cache, must-revalidate, max-age=0",
     )
 
-    return _response(200, {"url": url})
+
+def _updated_history(existing_history, url):
+    now = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+    history = [
+        item
+        for item in existing_history
+        if isinstance(item, dict) and item.get("url") != url
+    ]
+    history.insert(0, {"url": url, "updatedAt": now})
+    return history[:25]
+
+
+def handler(event, context):
+    try:
+        payload = _event_payload(event)
+        url = _validate_url(payload.get("url"))
+    except (json.JSONDecodeError, ValueError) as exc:
+        return _response(400, {"error": str(exc)})
+
+    bucket = os.environ["REDIRECT_BUCKET"]
+    current_key = os.environ.get("REDIRECT_KEY", "current.json")
+    history_key = os.environ.get("HISTORY_KEY", "history.json")
+
+    history = _updated_history(_read_history(bucket, history_key), url)
+
+    _write_json(bucket, current_key, {"url": url})
+    _write_json(bucket, history_key, {"urls": history})
+
+    return _response(200, {"url": url, "history": history})

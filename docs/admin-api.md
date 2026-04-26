@@ -32,6 +32,10 @@ Lambda integration:
 
 Admin login page:
   object: s3://lol-buck-mx/admin.html
+
+Admin-managed redirect state:
+  current: s3://lol-buck-mx/current.json
+  history: s3://lol-buck-mx/history.json
 ```
 
 ## Behavior
@@ -45,6 +49,7 @@ Admin login page:
 ```
 
 The route calls `lol-update-current-json`, which validates the URL and overwrites `s3://lol-buck-mx/current.json`.
+It also updates `s3://lol-buck-mx/history.json` with a de-duplicated list of prior selected URLs.
 
 Unauthenticated requests return `401 Unauthorized`.
 
@@ -53,4 +58,4 @@ Unauthenticated requests return `401 Unauthorized`.
 - The real admin user exists, but still needs to complete first login and set a permanent password through `admin.html`.
 - `admin.html` can now set the active redirect URL through the protected `POST /current` endpoint.
 - CORS currently allows all origins for the prototype API. Tighten this to the admin site origin when `admin.lol.buck.mx` exists.
-- The API only supports setting the current URL. URL history/list support still needs storage and routes.
+- GitHub Actions no longer uploads `current.json`; the admin page/API are now the management path for active redirect state.

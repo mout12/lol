@@ -22,6 +22,40 @@ When continuing work in a future AI session:
 
 ## Sessions
 
+### 2026-04-25 - Completed Admin URL Visibility And History Work
+
+#### What Changed
+
+Completed the planned admin URL visibility and history slice:
+
+1. `admin.html` now displays the current active redirect URL by reading `./current.json`.
+2. `admin.html` now displays prior URL submissions by reading `./history.json`.
+3. Tapping a prior URL calls the protected `POST /current` endpoint to make that URL active again.
+
+Updated `lol-update-current-json` so every successful redirect update also maintains `s3://lol-buck-mx/history.json`.
+
+Updated the Lambda execution role so it can:
+
+```text
+s3:PutObject -> arn:aws:s3:::lol-buck-mx/current.json
+s3:PutObject -> arn:aws:s3:::lol-buck-mx/history.json
+s3:GetObject -> arn:aws:s3:::lol-buck-mx/history.json
+```
+
+Removed `current.json` from the GitHub Actions deploy workflow. This prevents ordinary code/doc pushes from overwriting the redirect URL selected through the admin page.
+
+#### Verification
+
+Deployed the updated Lambda code and invoked it with the current active redirect URL.
+
+Verified that `s3://lol-buck-mx/history.json` was created with the active URL and no-store cache headers.
+
+Ran lightweight checks against `admin.html` to confirm the current URL display, history rendering, and tap-to-select code paths are present.
+
+#### Remaining Follow-Up
+
+The admin API CORS setting is still open for prototype testing. Restrict it after `admin.lol.buck.mx` is configured.
+
 ### 2026-04-25 - Planned Admin URL Visibility And History Work
 
 #### Planned Next Tasks

@@ -158,6 +158,71 @@
         overflow-wrap: anywhere;
       }
 
+      .current-url {
+        display: grid;
+        gap: 6px;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        background: #f8fafc;
+      }
+
+      .current-url strong,
+      .history-title {
+        font-size: 13px;
+      }
+
+      .current-url span {
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.4;
+        overflow-wrap: anywhere;
+      }
+
+      .history {
+        display: grid;
+        gap: 8px;
+      }
+
+      .history-title {
+        margin-top: 4px;
+        font-weight: 650;
+      }
+
+      .history-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .history-empty {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .history-item {
+        width: 100%;
+        min-height: 0;
+        padding: 10px 11px;
+        border: 1px solid var(--line);
+        color: var(--text);
+        background: #ffffff;
+        text-align: left;
+        font-weight: 600;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+      }
+
+      .history-item.active {
+        border-color: var(--accent);
+        color: var(--accent-dark);
+        background: #ecfdf8;
+      }
+
+      .history-item:not(:disabled):hover {
+        background: #f8fafc;
+      }
+
       .hidden {
         display: none !important;
       }
@@ -215,6 +280,10 @@
           <strong>Signed in</strong>
           <span id="signedInAs"></span>
         </div>
+        <div class="current-url">
+          <strong>Current redirect</strong>
+          <span id="currentUrl">Loading...</span>
+        </div>
         <form id="redirectForm" class="stack">
           <div class="field">
             <label for="redirectUrl">Redirect URL</label>
@@ -230,6 +299,12 @@
           </div>
           <button id="redirectButton" type="submit">Set redirect</button>
         </form>
+        <div class="history">
+          <div class="history-title">Prior URLs</div>
+          <div id="historyList" class="history-list">
+            <p class="history-empty">Loading...</p>
+          </div>
+        </div>
         <button id="logoutButton" class="secondary" type="button">Sign out</button>
         <p id="sessionStatus" class="status ok" aria-live="polite"></p>
       </section>
@@ -244,6 +319,8 @@
 
       const adminApi = {
         currentEndpoint: "https://gil40t7dfi.execute-api.us-east-2.amazonaws.com/current",
+        currentJson: "./current.json",
+        historyJson: "./history.json",
       };
 
       const state = {
@@ -264,8 +341,10 @@
         sessionPanel: document.querySelector("#sessionPanel"),
         signedInAs: document.querySelector("#signedInAs"),
         sessionStatus: document.querySelector("#sessionStatus"),
+        currentUrl: document.querySelector("#currentUrl"),
         redirectForm: document.querySelector("#redirectForm"),
         redirectButton: document.querySelector("#redirectButton"),
+        historyList: document.querySelector("#historyList"),
         logoutButton: document.querySelector("#logoutButton"),
       };
 
@@ -330,6 +409,95 @@
         return parsed.href;
       }
 
+      async function fetchJson(url, fallback) {
+        const response = await fetch(url, { cache: "no-store" });
+        if (response.status === 404) {
+          return fallback;
+        }
+
+        if (!response.ok) {
+          throw new Error("Could not load redirect state.");
+        }
+
+        return response.json();
+      }
+
+      function renderCurrentUrl(url) {
+        elements.currentUrl.textContent = url || "No active redirect found.";
+        if (url) {
+          elements.redirectForm.redirectUrl.value = url;
+        }
+      }
+
+      function renderHistory(urls, activeUrl) {
+        elements.historyList.textContent = "";
+
+        if (!urls.length) {
+          const empty = document.createElement("p");
+          empty.className = "history-empty";
+          empty.textContent = "No prior URLs yet.";
+          elements.historyList.append(empty);
+          return;
+        }
+
+        for (const item of urls) {
+          if (!item || typeof item.url !== "string") {
+            continue;
+          }
+
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "history-item";
+          button.textContent = item.url;
+          button.dataset.url = item.url;
+
+          if (item.url === activeUrl) {
+            button.classList.add("active");
+          }
+
+          elements.historyList.append(button);
+        }
+      }
+
+      async function loadRedirectState() {
+        try {
+          const [current, history] = await Promise.all([
+            fetchJson(adminApi.currentJson, {}),
+            fetchJson(adminApi.historyJson, { urls: [] }),
+          ]);
+          const activeUrl = typeof current.url === "string" ? current.url : "";
+          const urls = Array.isArray(history.urls) ? history.urls : [];
+
+          renderCurrentUrl(activeUrl);
+          renderHistory(urls, activeUrl);
+        } catch (error) {
+          setStatus(elements.sessionStatus, error.message, "error");
+        }
+      }
+
+      async function setRedirectUrl(url) {
+        const idToken = sessionStorage.getItem("idToken");
+        if (!idToken) {
+          throw new Error("Session expired. Sign in again.");
+        }
+
+        const response = await fetch(adminApi.currentEndpoint, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ url }),
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.error) {
+          throw new Error(data.error || data.message || "Could not update redirect.");
+        }
+
+        return data;
+      }
+
       function renderExistingSession() {
         const email = sessionStorage.getItem("adminEmail");
         const expiresAt = Number(sessionStorage.getItem("expiresAt") || 0);
@@ -343,6 +511,7 @@
         elements.signedInAs.textContent = email;
         setStatus(elements.sessionStatus, "Ready.", "ok");
         show("session");
+        loadRedirectState();
       }
 
       elements.loginForm.addEventListener("submit", async (event) => {
@@ -416,33 +585,38 @@
         elements.redirectButton.disabled = true;
         setStatus(elements.sessionStatus, "Updating redirect...");
 
-        const idToken = sessionStorage.getItem("idToken");
         const form = new FormData(elements.redirectForm);
 
         try {
-          if (!idToken) {
-            throw new Error("Session expired. Sign in again.");
-          }
-
           const url = validateRedirectUrl(String(form.get("redirectUrl") || "").trim());
-          const response = await fetch(adminApi.currentEndpoint, {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${idToken}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ url }),
-          });
-
-          const data = await response.json().catch(() => ({}));
-          if (!response.ok || data.error) {
-            throw new Error(data.error || data.message || "Could not update redirect.");
-          }
-
+          await setRedirectUrl(url);
+          await loadRedirectState();
           setStatus(elements.sessionStatus, "Redirect updated.", "ok");
         } catch (error) {
           setStatus(elements.sessionStatus, error.message, "error");
         } finally {
+          elements.redirectButton.disabled = false;
+        }
+      });
+
+      elements.historyList.addEventListener("click", async (event) => {
+        const button = event.target.closest("button[data-url]");
+        if (!button) {
+          return;
+        }
+
+        elements.redirectButton.disabled = true;
+        button.disabled = true;
+        setStatus(elements.sessionStatus, "Updating redirect...");
+
+        try {
+          await setRedirectUrl(button.dataset.url);
+          await loadRedirectState();
+          setStatus(elements.sessionStatus, "Redirect updated.", "ok");
+        } catch (error) {
+          setStatus(elements.sessionStatus, error.message, "error");
+        } finally {
+          button.disabled = false;
           elements.redirectButton.disabled = false;
         }
       });
