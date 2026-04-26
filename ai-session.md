@@ -22,6 +22,18 @@ When continuing work in a future AI session:
 
 ## Sessions
 
+### 2026-04-25 - Planned Admin URL Visibility And History Work
+
+#### Planned Next Tasks
+
+The next implementation slice is the first three admin quality-of-life items:
+
+1. Show the current active redirect URL on the admin page.
+2. Keep and display a list of prior URL submissions.
+3. Allow tapping a prior URL from that list to make it the active redirect again.
+
+After these are implemented and verified, add a follow-up session log entry confirming completion and noting any remaining limitations.
+
 ### 2026-04-25 - Added Admin Set Redirect Form
 
 #### What Changed
