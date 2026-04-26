@@ -26,14 +26,35 @@ When continuing work in a future AI session:
 - Admin API CORS allow origin: `https://admin.lol.buck.mx`
 - Admin auth: Cognito user pool `lol-admin-users`, app client `lol-admin-web`
 - Admin user status: real owner user exists; first-login password setup may already be complete if the admin page has been tested successfully
+- AWS Budget: `lol-monthly-cost-10-usd`, monthly `$10` cost budget with actual and forecasted email alerts
 - GitHub Actions deploys only `index.html` and `admin.html`; it does not upload or overwrite `current.json`
 - AWS account used for deploy role: `<account-id>`
 - GitHub Actions workflow: `.github/workflows/deploy-s3.yml`
 - AWS deploy role: `arn:aws:iam::<account-id>:role/github-lol-s3-deploy`
 - AWS identifiers in public docs should stay redacted unless they are required by browser-side code
-- Follow-up hardening: protect `main`, add AWS budget/billing alarm, and update GitHub Actions before the Node.js 20 deprecation cutoff
+- Follow-up hardening: protect `main` and update GitHub Actions before the Node.js 20 deprecation cutoff
 
 ## Sessions
+
+### 2026-04-26 - Added AWS Budget Alert
+
+#### What Changed
+
+Created AWS Budget:
+
+```text
+Name: lol-monthly-cost-10-usd
+Type: COST
+Time unit: MONTHLY
+Limit: 10 USD
+```
+
+Configured email alerts for:
+
+- actual monthly cost greater than 100% of the budget
+- forecasted monthly cost greater than 100% of the budget
+
+The subscriber uses the existing confirmed billing/anomaly email address. The email address is intentionally not recorded in this public repo.
 
 ### 2026-04-26 - Configured Admin Subdomain And Restricted CORS
 
