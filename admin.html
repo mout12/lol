@@ -166,7 +166,7 @@
   <body>
     <main>
       <h1>Redirect Admin</h1>
-      <p class="subtitle">Sign in to verify the admin login path.</p>
+      <p class="subtitle">Sign in to manage the active redirect URL.</p>
 
       <section id="loginPanel" class="panel">
         <form id="loginForm" class="stack">
@@ -215,6 +215,21 @@
           <strong>Signed in</strong>
           <span id="signedInAs"></span>
         </div>
+        <form id="redirectForm" class="stack">
+          <div class="field">
+            <label for="redirectUrl">Redirect URL</label>
+            <input
+              id="redirectUrl"
+              name="redirectUrl"
+              type="url"
+              inputmode="url"
+              autocomplete="url"
+              placeholder="https://example.com"
+              required
+            />
+          </div>
+          <button id="redirectButton" type="submit">Set redirect</button>
+        </form>
         <button id="logoutButton" class="secondary" type="button">Sign out</button>
         <p id="sessionStatus" class="status ok" aria-live="polite"></p>
       </section>
@@ -225,6 +240,10 @@
         region: "us-east-2",
         clientId: "mjj7ggl6ti48cu6s8qutdek1k",
         endpoint: "https://cognito-idp.us-east-2.amazonaws.com/",
+      };
+
+      const adminApi = {
+        currentEndpoint: "https://gil40t7dfi.execute-api.us-east-2.amazonaws.com/current",
       };
 
       const state = {
@@ -245,6 +264,8 @@
         sessionPanel: document.querySelector("#sessionPanel"),
         signedInAs: document.querySelector("#signedInAs"),
         sessionStatus: document.querySelector("#sessionStatus"),
+        redirectForm: document.querySelector("#redirectForm"),
+        redirectButton: document.querySelector("#redirectButton"),
         logoutButton: document.querySelector("#logoutButton"),
       };
 
@@ -294,6 +315,21 @@
         sessionStorage.removeItem("expiresAt");
       }
 
+      function validateRedirectUrl(value) {
+        let parsed;
+        try {
+          parsed = new URL(value);
+        } catch {
+          throw new Error("Enter a valid URL.");
+        }
+
+        if (!["http:", "https:"].includes(parsed.protocol)) {
+          throw new Error("URL must start with http:// or https://.");
+        }
+
+        return parsed.href;
+      }
+
       function renderExistingSession() {
         const email = sessionStorage.getItem("adminEmail");
         const expiresAt = Number(sessionStorage.getItem("expiresAt") || 0);
@@ -305,7 +341,7 @@
         }
 
         elements.signedInAs.textContent = email;
-        setStatus(elements.sessionStatus, "Credentials accepted.", "ok");
+        setStatus(elements.sessionStatus, "Ready.", "ok");
         show("session");
       }
 
@@ -375,10 +411,47 @@
         }
       });
 
+      elements.redirectForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        elements.redirectButton.disabled = true;
+        setStatus(elements.sessionStatus, "Updating redirect...");
+
+        const idToken = sessionStorage.getItem("idToken");
+        const form = new FormData(elements.redirectForm);
+
+        try {
+          if (!idToken) {
+            throw new Error("Session expired. Sign in again.");
+          }
+
+          const url = validateRedirectUrl(String(form.get("redirectUrl") || "").trim());
+          const response = await fetch(adminApi.currentEndpoint, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${idToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ url }),
+          });
+
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || data.error) {
+            throw new Error(data.error || data.message || "Could not update redirect.");
+          }
+
+          setStatus(elements.sessionStatus, "Redirect updated.", "ok");
+        } catch (error) {
+          setStatus(elements.sessionStatus, error.message, "error");
+        } finally {
+          elements.redirectButton.disabled = false;
+        }
+      });
+
       elements.logoutButton.addEventListener("click", () => {
         clearSession();
         elements.loginForm.reset();
         elements.newPasswordForm.reset();
+        elements.redirectForm.reset();
         setStatus(elements.loginStatus, "");
         show("login");
       });

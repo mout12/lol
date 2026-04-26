@@ -22,6 +22,20 @@ When continuing work in a future AI session:
 
 ## Sessions
 
+### 2026-04-25 - Added Admin Set Redirect Form
+
+#### What Changed
+
+Updated `admin.html` so a signed-in admin can paste a URL and submit it to:
+
+```text
+POST https://gil40t7dfi.execute-api.us-east-2.amazonaws.com/current
+```
+
+The page sends the Cognito ID token as a bearer token and validates that the URL uses `http://` or `https://` before making the request.
+
+The admin page still does not list prior URL submissions.
+
 ### 2026-04-25 - Added Admin Login Page Prototype
 
 #### What Changed

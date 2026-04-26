@@ -51,6 +51,6 @@ Unauthenticated requests return `401 Unauthorized`.
 ## Current Limits
 
 - The real admin user exists, but still needs to complete first login and set a permanent password through `admin.html`.
-- `admin.html` only verifies login/logout for now. It does not update the redirect URL yet.
+- `admin.html` can now set the active redirect URL through the protected `POST /current` endpoint.
 - CORS currently allows all origins for the prototype API. Tighten this to the admin site origin when `admin.lol.buck.mx` exists.
 - The API only supports setting the current URL. URL history/list support still needs storage and routes.
