@@ -15,11 +15,23 @@ When continuing work in a future AI session:
 - GitHub repo: `https://github.com/mout12/lol.git`
 - Main branch: `main`
 - S3 bucket: `lol-buck-mx`
-- Deployed object: `s3://lol-buck-mx/index.html`
+- Public site object: `s3://lol-buck-mx/index.html`
+- Admin page object: `s3://lol-buck-mx/admin.html`
+- Active redirect state: `s3://lol-buck-mx/current.json`
+- Admin history state: `s3://lol-buck-mx/history.json`
+- Redirect state contract: `docs/redirect-state.md`
 - Admin site: `https://admin.lol.buck.mx`
+- Admin HTTPS path: GoDaddy DNS -> CloudFront -> S3 `admin.html`
+- Admin API: API Gateway HTTP API `lol-admin-api` -> Cognito JWT authorizer -> Lambda `lol-update-current-json`
+- Admin API CORS allow origin: `https://admin.lol.buck.mx`
+- Admin auth: Cognito user pool `lol-admin-users`, app client `lol-admin-web`
+- Admin user status: real owner user exists; first-login password setup may already be complete if the admin page has been tested successfully
+- GitHub Actions deploys only `index.html` and `admin.html`; it does not upload or overwrite `current.json`
 - AWS account used for deploy role: `<account-id>`
 - GitHub Actions workflow: `.github/workflows/deploy-s3.yml`
 - AWS deploy role: `arn:aws:iam::<account-id>:role/github-lol-s3-deploy`
+- AWS identifiers in public docs should stay redacted unless they are required by browser-side code
+- Follow-up hardening: protect `main`, add AWS budget/billing alarm, and update GitHub Actions before the Node.js 20 deprecation cutoff
 
 ## Sessions
 
