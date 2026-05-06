@@ -91,6 +91,10 @@
         background: #ffffff;
       }
 
+      input[type="file"] {
+        padding: 10px 12px;
+      }
+
       input:focus {
         border-color: var(--accent);
         outline: 3px solid rgba(15, 118, 110, 0.16);
@@ -421,8 +425,18 @@
               placeholder="Optional label for history"
             />
           </div>
+          <div class="field">
+            <label for="photoFile">Photo</label>
+            <input
+              id="photoFile"
+              name="photoFile"
+              type="file"
+              accept="image/*"
+            />
+          </div>
           <div class="form-actions">
             <button id="redirectButton" type="submit">Set redirect</button>
+            <button id="photoUploadButton" class="secondary" type="button">Upload photo</button>
             <a id="testUrlButton" class="button-link secondary disabled" href="#" target="_blank" rel="noopener">Open test</a>
           </div>
         </form>
@@ -482,6 +496,8 @@
         redirectForm: document.querySelector("#redirectForm"),
         redirectUrlInput: document.querySelector("#redirectUrl"),
         redirectButton: document.querySelector("#redirectButton"),
+        photoFileInput: document.querySelector("#photoFile"),
+        photoUploadButton: document.querySelector("#photoUploadButton"),
         targetPreview: document.querySelector("#targetPreview"),
         testUrlButton: document.querySelector("#testUrlButton"),
         historyList: document.querySelector("#historyList"),
@@ -704,6 +720,59 @@
         return data;
       }
 
+      async function createPhotoUpload(file) {
+        const idToken = sessionStorage.getItem("idToken");
+        if (!idToken) {
+          throw new Error("Session expired. Sign in again.");
+        }
+
+        if (!file || !file.type.startsWith("image/")) {
+          throw new Error("Choose an image file to upload.");
+        }
+
+        const response = await fetch(adminApi.currentEndpoint, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            action: "createPhotoUpload",
+            fileName: file.name || "photo",
+            contentType: file.type,
+          }),
+        }).catch(() => {
+          throw new Error(
+            "Could not reach the admin API. Open https://admin.lol.buck.mx and try again."
+          );
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.error) {
+          throw new Error(data.error || data.message || "Could not prepare photo upload.");
+        }
+
+        if (!data.uploadUrl || !data.url || !data.uploadHeaders) {
+          throw new Error("Photo upload response was incomplete.");
+        }
+
+        return data;
+      }
+
+      async function uploadPhotoFile(file, uploadData) {
+        const response = await fetch(uploadData.uploadUrl, {
+          method: "PUT",
+          headers: uploadData.uploadHeaders,
+          body: file,
+        }).catch(() => {
+          throw new Error("Could not upload the photo to S3.");
+        });
+
+        if (!response.ok) {
+          throw new Error("Could not upload the photo to S3.");
+        }
+      }
+
       async function deleteHistoryUrl(url) {
         const idToken = sessionStorage.getItem("idToken");
         if (!idToken) {
@@ -831,6 +900,33 @@
         } catch (error) {
           setStatus(elements.sessionStatus, error.message, "error");
         } finally {
+          elements.redirectButton.disabled = false;
+        }
+      });
+
+      elements.photoUploadButton.addEventListener("click", async () => {
+        elements.photoUploadButton.disabled = true;
+        elements.redirectButton.disabled = true;
+        setStatus(elements.sessionStatus, "Preparing photo upload...");
+
+        const form = new FormData(elements.redirectForm);
+        const file = elements.photoFileInput.files[0];
+        const description = String(form.get("description") || "").trim();
+
+        try {
+          const uploadData = await createPhotoUpload(file);
+          setStatus(elements.sessionStatus, "Uploading photo...");
+          await uploadPhotoFile(file, uploadData);
+          setStatus(elements.sessionStatus, "Setting photo as redirect...");
+          const data = await setRedirectUrl(uploadData.url, description);
+          applyRedirectUpdate(data);
+          elements.redirectForm.reset();
+          renderTargetPreview();
+          setStatus(elements.sessionStatus, "Photo uploaded and redirect updated.", "ok");
+        } catch (error) {
+          setStatus(elements.sessionStatus, error.message, "error");
+        } finally {
+          elements.photoUploadButton.disabled = false;
           elements.redirectButton.disabled = false;
         }
       });

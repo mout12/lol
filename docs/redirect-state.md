@@ -53,3 +53,13 @@ Rules:
 - Each item should include a `url` string.
 - `description` is optional.
 - `updatedAt` is written by the Lambda and is used for display/context only.
+
+## Uploaded Photos
+
+Photo uploads use the same redirect state contract. Uploaded image objects are stored under:
+
+```text
+s3://lol-buck-mx/uploads/
+```
+
+After upload, the active `current.json` URL is set to the public URL for that uploaded object, and the optional admin description is stored in `history.json` like any other redirect target.

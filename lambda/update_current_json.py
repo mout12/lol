@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 
@@ -8,6 +9,9 @@ from botocore.exceptions import ClientError
 
 
 s3 = boto3.client("s3")
+
+MAX_ORIGINAL_FILENAME_LENGTH = 80
+PRESIGNED_UPLOAD_EXPIRES_SECONDS = 300
 
 
 def _response(status_code, payload):
@@ -41,10 +45,31 @@ def _validate_url(value):
 
 def _action_payload(payload):
     action = payload.get("action", "set")
-    if action not in ("set", "delete"):
-        raise ValueError("action must be set or delete")
+    if action not in ("set", "delete", "createPhotoUpload"):
+        raise ValueError("action must be set, delete, or createPhotoUpload")
 
     return action
+
+
+def _photo_upload_payload(payload):
+    content_type = payload.get("contentType")
+    original_filename = payload.get("fileName", "photo")
+
+    if not isinstance(content_type, str) or not content_type.startswith("image/"):
+        raise ValueError("contentType must be an image MIME type")
+
+    if not isinstance(original_filename, str):
+        raise ValueError("fileName must be a string")
+
+    safe_filename = re.sub(r"[^A-Za-z0-9._-]+", "-", original_filename.strip())
+    safe_filename = safe_filename.strip(".-")[:MAX_ORIGINAL_FILENAME_LENGTH] or "photo"
+    now = datetime.now(timezone.utc)
+    key = (
+        f"uploads/{now:%Y/%m/%d}/"
+        f"{now:%Y%m%dT%H%M%SZ}-{safe_filename}"
+    )
+
+    return key, content_type
 
 
 def _description_payload(payload):
@@ -123,7 +148,7 @@ def handler(event, context):
     try:
         payload = _event_payload(event)
         action = _action_payload(payload)
-        url = _validate_url(payload.get("url"))
+        url = None if action == "createPhotoUpload" else _validate_url(payload.get("url"))
         description_was_provided, description = _description_payload(payload)
     except (json.JSONDecodeError, ValueError) as exc:
         return _response(400, {"error": str(exc)})
@@ -131,6 +156,40 @@ def handler(event, context):
     bucket = os.environ["REDIRECT_BUCKET"]
     current_key = os.environ.get("REDIRECT_KEY", "current.json")
     history_key = os.environ.get("HISTORY_KEY", "history.json")
+    photo_public_base_url = os.environ.get(
+        "PHOTO_PUBLIC_BASE_URL", "https://admin.lol.buck.mx"
+    ).rstrip("/")
+
+    if action == "createPhotoUpload":
+        try:
+            key, content_type = _photo_upload_payload(payload)
+            cache_control = "public, max-age=31536000, immutable"
+            upload_url = s3.generate_presigned_url(
+                "put_object",
+                Params={
+                    "Bucket": bucket,
+                    "Key": key,
+                    "ContentType": content_type,
+                    "CacheControl": cache_control,
+                },
+                ExpiresIn=PRESIGNED_UPLOAD_EXPIRES_SECONDS,
+            )
+        except ValueError as exc:
+            return _response(400, {"error": str(exc)})
+
+        return _response(
+            200,
+            {
+                "key": key,
+                "url": f"{photo_public_base_url}/{key}",
+                "uploadUrl": upload_url,
+                "uploadHeaders": {
+                    "Content-Type": content_type,
+                    "Cache-Control": cache_control,
+                },
+                "expiresIn": PRESIGNED_UPLOAD_EXPIRES_SECONDS,
+            },
+        )
 
     existing_history = _read_history(bucket, history_key)
 

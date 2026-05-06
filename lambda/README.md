@@ -30,4 +30,18 @@ To delete a history item without changing `current.json`, send:
 }
 ```
 
-The deployed function is intended to be the write path behind the future admin UI. The public redirect page still reads `current.json`.
+To upload a photo from the admin page, first request a presigned upload:
+
+```json
+{
+  "action": "createPhotoUpload",
+  "fileName": "photo.jpg",
+  "contentType": "image/jpeg"
+}
+```
+
+The function returns an S3 `PUT` URL and the final public URL for the uploaded object. After the browser uploads the file directly to S3, it sends the returned public URL back through the normal redirect update path with the same optional `description` field.
+
+The deployed Lambda role needs `s3:PutObject` for `arn:aws:s3:::lol-buck-mx/uploads/*` to create presigned upload URLs. The S3 bucket also needs CORS allowing `PUT` from `https://admin.lol.buck.mx`.
+
+The public redirect page still reads `current.json`.

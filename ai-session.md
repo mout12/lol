@@ -36,6 +36,64 @@ When continuing work in a future AI session:
 
 ## Sessions
 
+### 2026-05-06 - Added Admin Photo Upload Redirect Flow
+
+#### What Changed
+
+Added a photo-upload path to the existing admin redirect workflow:
+
+- `admin.html` now includes a phone-friendly image file picker and an `Upload photo` action.
+- The existing `Description` field is reused for uploaded photos and stored in history the same way as manual URL redirects.
+- `lambda/update_current_json.py` now supports `action: createPhotoUpload`, which returns a short-lived presigned S3 `PUT` URL and the final public photo URL.
+- After the browser uploads the image directly to S3, the admin page sends the uploaded photo URL through the existing redirect update path so `current.json` and `history.json` stay consistent.
+- Updated `docs/admin-api.md`, `docs/redirect-state.md`, and `lambda/README.md` with the photo upload contract and deployment requirements.
+
+#### Deployment Notes
+
+This code has not been deployed from the local workspace yet. The deployed Lambda role now has `s3:PutObject` on `arn:aws:s3:::lol-buck-mx/uploads/*`. The S3 bucket CORS configuration still must allow browser `PUT` uploads from `https://admin.lol.buck.mx` with `Content-Type` and `Cache-Control` headers.
+
+#### AWS Permission Update
+
+Updated inline IAM policy `AllowWriteCurrentJson` on role `lambda-lol-current-json-writer`.
+
+The policy still allows:
+
+```text
+s3:PutObject -> arn:aws:s3:::lol-buck-mx/current.json
+s3:PutObject -> arn:aws:s3:::lol-buck-mx/history.json
+s3:GetObject -> arn:aws:s3:::lol-buck-mx/history.json
+```
+
+and now also allows:
+
+```text
+s3:PutObject -> arn:aws:s3:::lol-buck-mx/uploads/*
+```
+
+#### Deployment
+
+Deployed the updated Lambda code to `lol-update-current-json` `$LATEST`.
+
+Uploaded the updated admin page to:
+
+```text
+s3://lol-buck-mx/admin.html
+```
+
+with `Content-Type: text/html`, `Cache-Control: no-store,no-cache,must-revalidate,max-age=0`, and `AES256` server-side encryption.
+
+Added S3 bucket CORS on `lol-buck-mx` for browser photo uploads:
+
+```text
+Origin: https://admin.lol.buck.mx
+Method: PUT
+Allowed headers: Content-Type, Cache-Control
+Exposed header: ETag
+Max age: 300 seconds
+```
+
+Verified the deployed Lambda returns `200` for `action: createPhotoUpload` and returns an `uploads/YYYY/MM/DD/...` key plus a public admin-domain URL. Temporary local files containing the short-lived presigned URL were removed.
+
 ### 2026-04-26 - Polished Admin Panel UX
 
 #### What Changed

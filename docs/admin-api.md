@@ -45,6 +45,10 @@ Admin HTTPS hosting:
 Admin-managed redirect state:
   current: s3://lol-buck-mx/current.json
   history: s3://lol-buck-mx/history.json
+
+Admin photo uploads:
+  prefix: s3://lol-buck-mx/uploads/
+  public URL base: https://admin.lol.buck.mx/uploads/
 ```
 
 The redirect state file contract is documented in [`redirect-state.md`](redirect-state.md).
@@ -74,6 +78,18 @@ The same route accepts:
 
 for removing a URL from history without changing `current.json`.
 
+The route also accepts:
+
+```json
+{
+  "action": "createPhotoUpload",
+  "fileName": "photo.jpg",
+  "contentType": "image/jpeg"
+}
+```
+
+for creating a short-lived presigned S3 upload URL. The admin page uploads the image file directly to S3, then submits the uploaded photo URL back through the normal redirect update path with the same optional `description` field.
+
 Unauthenticated requests return `401 Unauthorized`.
 
 Browser calls are allowed only from:
@@ -86,4 +102,21 @@ https://admin.lol.buck.mx
 
 - The real admin user exists, but still needs to complete first login and set a permanent password through `admin.html`.
 - `admin.html` can now set the active redirect URL through the protected `POST /current` endpoint.
+- `admin.html` can request a presigned photo upload, upload the selected image to `uploads/`, and set the uploaded photo URL as the active redirect.
 - GitHub Actions no longer uploads `current.json`; the admin page/API are now the management path for active redirect state.
+
+## Photo Upload Deployment Notes
+
+The deployed Lambda role needs `s3:PutObject` on:
+
+```text
+arn:aws:s3:::lol-buck-mx/uploads/*
+```
+
+The S3 bucket CORS configuration must allow browser `PUT` uploads from:
+
+```text
+https://admin.lol.buck.mx
+```
+
+with at least the `Content-Type` and `Cache-Control` request headers allowed. The Lambda can set `PHOTO_PUBLIC_BASE_URL` to override the default public URL base of `https://admin.lol.buck.mx`.
